@@ -35,7 +35,7 @@ $(plugins):
 	cd plugins/$@ && make DEBUG=$(DEBUG)
 
 .PHONY: clean
-clean: clean/plugin_info.h $(plugins-clean) clean/packages clean/build/utils/version
+clean: clean/plugin_info.h $(plugins-clean) clean/packages clean/build/utils/version clean/build/registry/registry
 
 .PHONY: clean/plugin_info.h
 clean/plugin_info.h:
@@ -79,6 +79,16 @@ release/%: plugin_info.h clean/% % build/utils/version
 	cp -r plugins/$(PLUGIN_NAME)/README.md $(OUTPUT_DIR)/$(PLUGIN_NAME)/
 	tar -zcvf $(OUTPUT_DIR)/$(PLUGIN_NAME)-$(PLUGIN_VERSION)-${ARCH}.tar.gz -C ${OUTPUT_DIR}/$(PLUGIN_NAME) $$(ls -A ${OUTPUT_DIR}/$(PLUGIN_NAME))
 
+.PHONY: check-registry
+check-registry: build/registry/registry
+	@build/registry/registry check ./registry.yaml
+	@echo The plugin registry is OK
+
+.PHONY: update-readme
+update-readme: build/registry/registry
+	@build/registry/registry table ./registry.yaml --subfile=./README.md
+	@echo Readme successfully updated
+
 .PHONY: plugin_info.h
 plugin_info.h:
 	$(CURL) -Lso $@ https://raw.githubusercontent.com/falcosecurity/libs/${FALCOSECURITY_LIBS_REVISION}/userspace/libscap/plugin_info.h
@@ -90,3 +100,11 @@ build/utils/version:
 .PHONY: clean/build/utils/version
 clean/build/utils/version:
 	@cd build/utils && make clean
+
+.PHONY: build/registry/registry
+build/registry/registry:
+	@cd build/registry && make
+
+.PHONY: clean/build/registry/registry
+clean/build/registry/registry:
+	@cd build/registry && make clean
